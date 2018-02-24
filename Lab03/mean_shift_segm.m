@@ -3,22 +3,22 @@ function segm = mean_shift_segm(I, spatial_bandwidth, colour_bandwidth, num_iter
 tic
 fprintf('Find colour channels with K-means...\n');
 K = 16;
-[ segm, centers ] = kmeans_segm(I, K, 10, 4321);
+[segm, centers, ~, ~, ~] = kmeans_segm(I, K, 10, 4321, true, false);
 toc
 
 centers(isnan(centers)) = 0.0;
-%imshow(overlay_bounds(I, segm))
-%pause
+% imshow(overlay_bounds(I, segm))
+% pause
 
-[ height, width, depth ] = size(I);
+[height, width, depth] = size(I);
 idx = reshape(segm, [height, width]);
-maps = zeros(height, width, K, 'single');
+maps = zeros(height, width, K, 'single'); 
 mapx = zeros(height, width, K, 'single');
 mapy = zeros(height, width, K, 'single');
 [X, Y] = meshgrid(1:width, 1: height);
 for k = 1:K
-    maps(:,:,k) = (idx == k);
-    mapx(:,:,k) = maps(:,:,k).*X;
+    maps(:,:,k) = (idx == k);       % label the position whose index equals k
+    mapx(:,:,k) = maps(:,:,k).*X;   % labels to coordinates
     mapy(:,:,k) = maps(:,:,k).*Y; 
 end
 s = 2*ceil(1.5*spatial_bandwidth) + 1;
@@ -33,7 +33,7 @@ constC = -0.5/(colour_bandwidth^2);
 x = reshape(X, [width*height, 1]);
 y = reshape(Y, [width*height, 1]);
 Ic = single(reshape(I, [width*height, 3]));
-wei = exp(constC*pdist2(Ic, centers));
+wei = exp(constC*pdist2(Ic, centers));  % kernel = exp(-0.5||x/h||^2)
 for l = 1:num_iterations
     p = (round(x)-1)*height + round(y);
     ww = mapsw(p,:) .* wei;
@@ -48,7 +48,7 @@ for l = 1:num_iterations
 end
 
 fprintf('Assign high density points to pixels...\n');
-XY = [ x, y ];
+XY = [x, y];
 thr = 10.0;
 val = 0;
 mask = zeros(height*width, 1, 'int16');
